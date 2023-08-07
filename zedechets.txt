@@ -1,0 +1,45 @@
+  io.on("connection", (socket) => {
+    // console.log(socket.id);
+
+    socket.on("join_room", (data) => {
+      const { userName, room } = data;
+      let actionTime = Date.now();
+
+      // Join room
+      socket.join(room);
+      // Send message to users already in the room
+      socket.to(room).emit("receive_message", {
+        message: `${userName}, has joined the chat.`,
+        userName: chatBot,
+        actionTime,
+        isMe: false,
+      });
+      // Get a welcome message
+      socket.emit("receive_message", {
+        message: `Welcome ${userName}`,
+        userName: chatBot,
+        actionTime,
+        isMe: true,
+      });
+
+      chatRoom = room;
+      allUsers.push({ _id: socket.id, userName, room });
+      chatRoomUsers = allUsers.filter((user) => user.room === room);
+      socket.to(room).emit("chatroom_users", chatRoomUsers);
+      socket.emit("chatroom_users", chatRoomUsers);
+    });
+
+    socket.on("send_message", (data) => {
+      const { userName, room, message } = data;
+      let actionTime = Date.now();
+
+      // Send the message in the room
+      io.in(room).emit("receive_message", {
+        message,
+        userName,
+        actionTime,
+        isMe: false,
+      });
+    });
+  });
+  
